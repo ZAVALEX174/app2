@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Редактор линий и объектов</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+			background-color: #f5f5f5;
+		}
+
+		.container {
+			display: flex;
+			gap: 20px;
+			max-width: 1400px;
+			margin: 0 auto;
+		}
+
+		.controls {
+			width: 300px;
+			background: white;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+		}
+
+		.canvas-container {
+			flex: 1;
+			background: white;
+			padding: 20px;
+			border-radius: 8px;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+			display: flex;
+			flex-direction: column;
+		}
+
+		h1,
+		h2,
+		h3 {
+			margin-bottom: 15px;
+			color: #333;
+		}
+
+		.control-group {
+			margin-bottom: 20px;
+			padding-bottom: 15px;
+			border-bottom: 1px solid #eee;
+		}
+
+		.toolbar {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin-bottom: 15px;
+		}
+
+		.mode-btn,
+		.color-btn,
+		button {
+			padding: 8px 12px;
+			border: 1px solid #ddd;
+			background: white;
+			border-radius: 4px;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.mode-btn:hover,
+		.color-btn:hover,
+		button:hover {
+			background: #f0f0f0;
+		}
+
+		.mode-btn.active {
+			background: #3498db;
+			color: white;
+			border-color: #3498db;
+		}
+
+		.color-btn {
+			width: 30px;
+			height: 30px;
+			border-radius: 50%;
+			padding: 0;
+		}
+
+		.color-btn.active {
+			transform: scale(1.1);
+			box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+		}
+
+		.status {
+			background: #f8f9fa;
+			padding: 10px;
+			border-radius: 4px;
+			margin-top: 10px;
+			font-size: 14px;
+		}
+
+		.status-item {
+			margin-bottom: 5px;
+		}
+
+		#drawingCanvas {
+			border: 1px solid #ddd;
+			background: white;
+			cursor: crosshair;
+			flex: 1;
+			width: 100%;
+		}
+
+		.object-panel {
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			padding: 10px;
+			margin: 10px 0;
+			background: #f9f9f9;
+			max-height: 400px;
+			overflow-y: auto;
+		}
+
+		.object-categories {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 5px;
+			margin-bottom: 10px;
+		}
+
+		.category-btn {
+			padding: 5px 10px;
+			border: 1px solid #ddd;
+			background: white;
+			border-radius: 3px;
+			cursor: pointer;
+			font-size: 12px;
+		}
+
+		.category-btn.active {
+			background: #3498db;
+			color: white;
+		}
+
+		.objects-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 8px;
+		}
+
+		.object-item {
+			border: 1px solid #ddd;
+			border-radius: 3px;
+			padding: 8px 5px;
+			text-align: center;
+			cursor: pointer;
+			background: white;
+		}
+
+		.object-item.selected {
+			border-color: #3498db;
+			background: #e3f2fd;
+		}
+
+		.object-icon {
+			font-size: 20px;
+			margin-bottom: 5px;
+		}
+
+		.object-name {
+			font-size: 10px;
+			color: #666;
+		}
+
+		.action-buttons {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			margin-top: 15px;
+		}
+
+		#clearAll {
+			background: #e74c3c;
+			color: white;
+		}
+
+		#showAllLines {
+			background: #2ecc71;
+			color: white;
+		}
+
+		#savePDF {
+			background: #9b59b6;
+			color: white;
+		}
+
+		.length-edit-overlay {
+			position: fixed;
+			background: white;
+			border: 1px solid #ccc;
+			border-radius: 4px;
+			padding: 10px;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+			z-index: 1000;
+			display: flex;
+			gap: 5px;
+			align-items: center;
+		}
+
+		.length-edit-overlay input {
+			padding: 5px;
+			border: 1px solid #ddd;
+			border-radius: 3px;
+			width: 100px;
+		}
+
+		.length-edit-overlay button {
+			padding: 5px 10px;
+			background: #3498db;
+			color: white;
+			border: none;
+			border-radius: 3px;
+			cursor: pointer;
+		}
+	</style>
+	<!-- Подключаем библиотеку jsPDF -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+
+<body>
+	<div class="container">
+		<div class="controls">
+			<h1>Редактор линий и объектов</h1>
+
+			<div class="control-group">
+				<h3>Режимы</h3>
+				<div class="toolbar">
+					<button class="mode-btn active" data-mode="draw">✏️ Рисовать</button>
+					<button class="mode-btn" data-mode="move">↕️ Перемещать</button>
+					<button class="mode-btn" data-mode="edit">🔧 Редактировать</button>
+					<button class="mode-btn" data-mode="delete">❌ Удалить</button>
+				</div>
+			</div>
+
+			<div class="control-group">
+				<h3>Цвет линии</h3>
+				<div class="toolbar">
+					<button class="color-btn active" data-color="black" style="background: black"></button>
+					<button class="color-btn" data-color="red" style="background: red"></button>
+					<button class="color-btn" data-color="blue" style="background: blue"></button>
+					<button class="color-btn" data-color="green" style="background: green"></button>
+				</div>
+			</div>
+
+			<div class="control-group">
+				<h3>Привязка</h3>
+				<div>
+					<input type="checkbox" id="snapToGrid" checked>
+					<label for="snapToGrid">К сетке</label>
+				</div>
+				<div>
+					<input type="checkbox" id="snapToPoints" checked>
+					<label for="snapToPoints">К точкам</label>
+				</div>
+			</div>
+
+			<div class="control-group">
+				<h3>Библиотека объектов</h3>
+				<div class="object-panel">
+					<div class="object-categories">
+						<button class="category-btn active" data-category="all">Все</button>
+						<button class="category-btn" data-category="doors_windows">Двери/Окна</button>
+						<button class="category-btn" data-category="furniture">Мебель</button>
+					</div>
+					<div class="objects-grid" id="objectsGrid">
+						<!-- Объекты будут добавлены через JavaScript -->
+					</div>
+				</div>
+			</div>
+
+			<div class="control-group">
+				<h3>Действия</h3>
+				<div class="action-buttons">
+					<button id="clearAll">Очистить всё</button>
+					<button id="showAllLines">Показать все элементы</button>
+					<button id="savePDF">Сохранить в PDF</button>
+				</div>
+			</div>
+
+			<div class="status">
+				<h3>Статус</h3>
+				<div class="status-item">
+					Режим: <span id="currentMode">Рисование</span>
+				</div>
+				<div class="status-item">
+					Цвет: <span id="currentColor">black</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="canvas-container">
+			<h2>Область рисования</h2>
+			<canvas id="drawingCanvas" width="800" height="600"></canvas>
+		</div>
+	</div>
+
+	<script>
+		// Глобальная переменная для доступа к jsPDF
+		let jsPDF;
+
+		class Editor {
+			constructor(canvasId) {
+				this.canvas = document.getElementById(canvasId);
+				this.ctx = this.canvas.getContext('2d');
+
+				// Основные свойства редактора
+				this.mode = 'draw';
+				this.lineColor = 'black';
+				this.lineWidth = 2;
+				this.snapToGrid = true;
+				this.snapToPoints = true;
+				this.gridSize = 20;
+
+				// Состояние взаимодействия
+				this.isDrawing = false;
+				this.isMoving = false;
+				this.isEditing = false;
+				this.selectedElement = null;
+				this.dragOffset = { x: 0, y: 0 };
+				this.editingPoint = null;
+
+				// Редактирование длины
+				this.editingLength = false;
+				this.lengthEditOverlay = null;
+
+				// Хранилища данных
+				this.lines = [];
+				this.objects = [];
+				this.tempLine = null;
+
+				// Для работы с объектами
+				this.currentObjectType = null;
+
+				this.init();
+			}
+
+			init() {
+				this.setupEventListeners();
+				this.setupUI();
+				this.setupObjectLibrary();
+				this.redraw();
+			}
+
+			setupEventListeners() {
+				// События мыши на canvas
+				this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+				this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+				this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
+				this.canvas.addEventListener('mouseout', this.handleMouseOut.bind(this));
+				this.canvas.addEventListener('dblclick', this.handleDoubleClick.bind(this));
+
+				// Событие изменения размера окна
+				window.addEventListener('resize', this.handleResize.bind(this));
+				this.handleResize();
+			}
+
+			handleResize() {
+				const container = this.canvas.parentElement;
+				const width = container.clientWidth - 40;
+				const height = container.clientHeight - 80;
+
+				if (this.canvas.width !== width || this.canvas.height !== height) {
+					this.canvas.width = width;
+					this.canvas.height = height;
+					this.redraw();
+				}
+			}
+
+			setupUI() {
+				// Кнопки режимов
+				document.querySelectorAll('.mode-btn').forEach(btn => {
+					btn.addEventListener('click', (e) => {
+						this.setMode(e.target.dataset.mode);
+						// Сброс выбора объекта при переключении режима
+						this.currentObjectType = null;
+						document.querySelectorAll('.object-item').forEach(item => {
+							item.classList.remove('selected');
+						});
+					});
+				});
+
+				// Выбор цвета
+				document.querySelectorAll('.color-btn').forEach(btn => {
+					btn.addEventListener('click', (e) => {
+						this.setColor(e.target.dataset.color);
+					});
+				});
+
+				// Привязка
+				document.getElementById('snapToGrid').addEventListener('change', (e) => {
+					this.snapToGrid = e.target.checked;
+					this.redraw();
+				});
+
+				document.getElementById('snapToPoints').addEventListener('change', (e) => {
+					this.snapToPoints = e.target.checked;
+				});
+
+				// Действия
+				document.getElementById('clearAll').addEventListener('click', () => {
+					if (confirm('Вы уверены, что хотите очистить всё?')) {
+						this.lines = [];
+						this.objects = [];
+						this.redraw();
+					}
+				});
+
+				document.getElementById('showAllLines').addEventListener('click', () => {
+					console.log('Линии:', this.lines);
+					console.log('Объекты:', this.objects);
+					alert(`Линий: ${this.lines.length}, Объектов: ${this.objects.length}`);
+				});
+
+				// Сохранение в PDF
+				document.getElementById('savePDF').addEventListener('click', () => {
+					this.saveAsPDF();
+				});
+			}
+
+			setupObjectLibrary() {
+				// Категории объектов
+				const categories = document.querySelectorAll('.category-btn');
+				categories.forEach(btn => {
+					btn.addEventListener('click', (e) => {
+						categories.forEach(b => b.classList.remove('active'));
+						e.target.classList.add('active');
+						this.showCategory(e.target.dataset.category);
+					});
+				});
+
+				// Заполняем библиотеку объектов
+				this.populateObjectLibrary();
+			}
+
+			populateObjectLibrary() {
+				const objectsGrid = document.getElementById('objectsGrid');
+				objectsGrid.innerHTML = '';
+
+				const objects = [
+					{ type: 'door', name: 'Дверь', icon: '🚪', category: 'doors_windows', custumLeng: '1' },
+					{ type: 'window', name: 'Окно', icon: '🪟', category: 'doors_windows', custumLeng: '2' },
+					{ type: 'table', name: 'Стол', icon: '🪑', category: 'furniture', custumLeng: '3' },
+					{ type: 'chair', name: 'Стул', icon: '💺', category: 'furniture', custumLeng: '4' },
+					{ type: 'sofa', name: 'Диван', icon: '🛋️', category: 'furniture', custumLeng: '5' },
+					{ type: 'bed', name: 'Кровать', icon: '🛏️', category: 'furniture', custumLeng: '6' }
+				];
+
+				objects.forEach(obj => {
+					const objElement = document.createElement('div');
+					objElement.className = 'object-item';
+					objElement.innerHTML = `
+                        <div class="object-icon">${obj.icon}</div>
+                        <div class="object-name">${obj.name}</div>
+                    `;
+					objElement.dataset.type = obj.type;
+					objElement.dataset.category = obj.category;
+
+					objElement.addEventListener('click', () => {
+						document.querySelectorAll('.object-item').forEach(item => {
+							item.classList.remove('selected');
+						});
+						objElement.classList.add('selected');
+						this.currentObjectType = obj.type;
+						// Автоматически переключаемся в режим рисования для добавления объектов
+						this.setMode('draw');
+					});
+
+					objectsGrid.appendChild(objElement);
+				});
+			}
+
+			showCategory(category) {
+				const objects = document.querySelectorAll('.object-item');
+				objects.forEach(obj => {
+					if (category === 'all' || obj.dataset.category === category) {
+						obj.style.display = 'block';
+					} else {
+						obj.style.display = 'none';
+					}
+				});
+			}
+
+			setMode(mode) {
+				this.mode = mode;
+
+				// Обновление UI
+				document.querySelectorAll('.mode-btn').forEach(btn => {
+					btn.classList.remove('active');
+				});
+				document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+				// Изменение курсора и текста статуса
+				switch (mode) {
+					case 'draw':
+						this.canvas.style.cursor = 'crosshair';
+						document.getElementById('currentMode').textContent =
+							this.currentObjectType ? 'Добавление объектов' : 'Рисование линий';
+						break;
+					case 'move':
+						this.canvas.style.cursor = 'move';
+						document.getElementById('currentMode').textContent = 'Перемещение';
+						break;
+					case 'edit':
+						this.canvas.style.cursor = 'pointer';
+						document.getElementById('currentMode').textContent = 'Редактирование';
+						break;
+					case 'delete':
+						this.canvas.style.cursor = 'not-allowed';
+						document.getElementById('currentMode').textContent = 'Удаление';
+						break;
+				}
+			}
+
+			setColor(color) {
+				this.lineColor = color;
+
+				document.querySelectorAll('.color-btn').forEach(btn => {
+					btn.classList.remove('active');
+				});
+
+				const colorBtn = document.querySelector(`[data-color="${color}"]`);
+				if (colorBtn) {
+					colorBtn.classList.add('active');
+				}
+
+				document.getElementById('currentColor').textContent = color;
+			}
+
+			getMousePos(e) {
+				const rect = this.canvas.getBoundingClientRect();
+				const scaleX = this.canvas.width / rect.width;
+				const scaleY = this.canvas.height / rect.height;
+
+				return {
+					x: (e.clientX - rect.left) * scaleX,
+					y: (e.clientY - rect.top) * scaleY
+				};
+			}
+
+			snapPosition(x, y) {
+				let snappedX = x;
+				let snappedY = y;
+
+				// Привязка к сетке
+				if (this.snapToGrid) {
+					snappedX = Math.round(x / this.gridSize) * this.gridSize;
+					snappedY = Math.round(y / this.gridSize) * this.gridSize;
+				}
+
+				// Привязка к точкам линий и объектов
+				if (this.snapToPoints) {
+					let closestDistance = 15;
+					let closestPoint = null;
+
+					// Проверка точек линий
+					this.lines.forEach(line => {
+						[line.start, line.end].forEach(point => {
+							const distance = Math.sqrt(
+								Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)
+							);
+							if (distance < closestDistance) {
+								closestDistance = distance;
+								closestPoint = point;
+							}
+						});
+					});
+
+					// Проверка углов объектов
+					this.objects.forEach(obj => {
+						const points = [
+							{ x: obj.x, y: obj.y },
+							{ x: obj.x + obj.width, y: obj.y },
+							{ x: obj.x, y: obj.y + obj.height },
+							{ x: obj.x + obj.width, y: obj.y + obj.height }
+						];
+
+						points.forEach(point => {
+							const distance = Math.sqrt(
+								Math.pow(point.x - x, 2) + Math.pow(point.y - y, 2)
+							);
+							if (distance < closestDistance) {
+								closestDistance = distance;
+								closestPoint = point;
+							}
+						});
+					});
+
+					if (closestPoint) {
+						snappedX = closestPoint.x;
+						snappedY = closestPoint.y;
+					}
+				}
+
+				return { x: snappedX, y: snappedY };
+			}
+
+			handleMouseDown(e) {
+				const mousePos = this.getMousePos(e);
+				const snappedPos = this.snapPosition(mousePos.x, mousePos.y);
+
+				// Если выбран тип объекта и мы в режиме рисования, добавляем объект
+				if (this.mode === 'draw' && this.currentObjectType) {
+					this.addObject(this.currentObjectType, snappedPos.x, snappedPos.y);
+					return;
+				}
+
+				switch (this.mode) {
+					case 'draw':
+						this.startDrawing(snappedPos);
+						break;
+					case 'move':
+						this.startMoving(snappedPos);
+						break;
+					case 'edit':
+						this.startEditing(snappedPos);
+						break;
+					case 'delete':
+						this.deleteAtPosition(snappedPos);
+						break;
+				}
+			}
+
+			handleMouseMove(e) {
+				const mousePos = this.getMousePos(e);
+				const snappedPos = this.snapPosition(mousePos.x, mousePos.y);
+
+				switch (this.mode) {
+					case 'draw':
+						this.continueDrawing(snappedPos);
+						break;
+					case 'move':
+						this.continueMoving(snappedPos);
+						break;
+					case 'edit':
+						this.continueEditing(snappedPos);
+						break;
+				}
+
+				// Показать позицию привязки
+				// 	if (this.snapToGrid || this.snapToPoints) {
+				// 		this.showSnapIndicator(snappedPos.x, snappedPos.y);
+				// 	}
+			}
+
+			handleMouseUp() {
+				switch (this.mode) {
+					case 'draw':
+						this.finishDrawing();
+						break;
+					case 'move':
+					case 'edit':
+						this.finishInteraction();
+						break;
+				}
+			}
+
+			handleMouseOut() {
+				if (this.mode === 'draw') {
+					this.finishDrawing();
+				}
+			}
+
+			handleDoubleClick(e) {
+				if (this.mode !== 'edit') return;
+
+				const mousePos = this.getMousePos(e);
+				const snappedPos = this.snapPosition(mousePos.x, mousePos.y);
+				const line = this.findLineAtPoint(snappedPos);
+
+				if (line) {
+					this.startLengthEditing(line, snappedPos);
+				}
+			}
+
+			// Рисование линий
+			startDrawing(pos) {
+				this.isDrawing = true;
+				this.tempLine = {
+					start: { ...pos },
+					end: { ...pos },
+					color: this.lineColor,
+					width: this.lineWidth
+				};
+			}
+
+			continueDrawing(pos) {
+				if (this.isDrawing && this.tempLine) {
+					this.tempLine.end = { ...pos };
+					this.redraw();
+				}
+			}
+
+			finishDrawing() {
+				if (this.isDrawing && this.tempLine) {
+					const dx = this.tempLine.end.x - this.tempLine.start.x;
+					const dy = this.tempLine.end.y - this.tempLine.start.y;
+					const length = Math.sqrt(dx * dx + dy * dy);
+
+					if (length > 5) {
+						this.lines.push({
+							...this.tempLine,
+							id: Date.now() + Math.random()
+						});
+					}
+
+					this.tempLine = null;
+					this.isDrawing = false;
+					this.redraw();
+				}
+			}
+
+			// Перемещение
+			startMoving(pos) {
+				// Сначала проверяем объекты
+				this.selectedElement = this.findObjectAtPoint(pos);
+				if (this.selectedElement) {
+					this.isMoving = true;
+					this.dragOffset = {
+						x: pos.x - this.selectedElement.x,
+						y: pos.y - this.selectedElement.y
+					};
+					return;
+				}
+
+				// Затем проверяем линии
+				this.selectedElement = this.findLineAtPoint(pos);
+				if (this.selectedElement) {
+					this.isMoving = true;
+					this.dragOffset = {
+						x: pos.x - this.selectedElement.start.x,
+						y: pos.y - this.selectedElement.start.y
+					};
+				}
+			}
+
+			continueMoving(pos) {
+				if (this.isMoving && this.selectedElement) {
+					if (this.selectedElement.start && this.selectedElement.end) {
+						// Это линия
+						const newStartX = pos.x - this.dragOffset.x;
+						const newStartY = pos.y - this.dragOffset.y;
+
+						const deltaX = newStartX - this.selectedElement.start.x;
+						const deltaY = newStartY - this.selectedElement.start.y;
+
+						this.selectedElement.start.x = newStartX;
+						this.selectedElement.start.y = newStartY;
+						this.selectedElement.end.x += deltaX;
+						this.selectedElement.end.y += deltaY;
+					} else {
+						// Это объект
+						this.selectedElement.x = pos.x - this.dragOffset.x;
+						this.selectedElement.y = pos.y - this.dragOffset.y;
+					}
+
+					this.redraw();
+				}
+			}
+
+			// Редактирование
+			startEditing(pos) {
+				this.selectedElement = this.findLineAtPoint(pos);
+				if (this.selectedElement) {
+					this.isEditing = true;
+
+					const distToStart = this.distance(pos, this.selectedElement.start);
+					const distToEnd = this.distance(pos, this.selectedElement.end);
+
+					this.editingPoint = distToStart < distToEnd ? 'start' : 'end';
+				}
+			}
+
+			continueEditing(pos) {
+				if (this.isEditing && this.selectedElement && this.editingPoint) {
+					this.selectedElement[this.editingPoint] = { ...pos };
+					this.redraw();
+				}
+			}
+
+			// Удаление
+			deleteAtPosition(pos) {
+				// Сначала проверяем объекты
+				const objectToDelete = this.findObjectAtPoint(pos);
+				if (objectToDelete) {
+					this.objects = this.objects.filter(obj => obj !== objectToDelete);
+					this.redraw();
+					return;
+				}
+
+				// Затем проверяем линии
+				const lineToDelete = this.findLineAtPoint(pos);
+				if (lineToDelete) {
+					this.lines = this.lines.filter(line => line !== lineToDelete);
+					this.redraw();
+				}
+			}
+
+			finishInteraction() {
+				this.isMoving = false;
+				this.isEditing = false;
+				this.selectedElement = null;
+				this.editingPoint = null;
+			}
+
+			// Редактирование длины линии
+			startLengthEditing(line, pos) {
+				this.editingLength = true;
+				this.selectedElement = line;
+
+				// Удаляем старый оверлей, если есть
+				if (this.lengthEditOverlay) {
+					document.body.removeChild(this.lengthEditOverlay);
+				}
+
+				// Создаем новый оверлей
+				this.lengthEditOverlay = document.createElement('div');
+				this.lengthEditOverlay.className = 'length-edit-overlay';
+
+				const input = document.createElement('input');
+				input.type = 'text';
+				input.value = line.customLength || '';
+				input.placeholder = 'Длина в m';
+
+				const button = document.createElement('button');
+				button.textContent = 'OK';
+
+				// Позиционируем оверлей
+				const rect = this.canvas.getBoundingClientRect();
+				const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+				const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+				this.lengthEditOverlay.style.left = (rect.left + pos.x + scrollX) + 'px';
+				this.lengthEditOverlay.style.top = (rect.top + pos.y + scrollY) + 'px';
+
+				// Добавляем элементы в оверлей
+				this.lengthEditOverlay.appendChild(input);
+				this.lengthEditOverlay.appendChild(button);
+				document.body.appendChild(this.lengthEditOverlay);
+
+				// Фокусируемся на поле ввода
+				input.focus();
+				input.select();
+
+				// Обработчики событий
+				const applyLength = () => {
+					const newLength = input.value.trim();
+					if (newLength && !isNaN(newLength)) {
+						line.customLength = Number(newLength);
+					} else {
+						delete line.customLength;
+					}
+					this.redraw();
+					this.finishLengthEditing();
+				};
+
+				const cancelLength = () => {
+					this.finishLengthEditing();
+				};
+
+				button.addEventListener('click', applyLength);
+				input.addEventListener('keypress', (e) => {
+					if (e.key === 'Enter') {
+						applyLength();
+					} else if (e.key === 'Escape') {
+						cancelLength();
+					}
+				});
+
+				// Закрытие при клике вне оверлея
+				setTimeout(() => {
+					const closeHandler = (e) => {
+						if (this.lengthEditOverlay && !this.lengthEditOverlay.contains(e.target)) {
+							this.finishLengthEditing();
+							document.removeEventListener('mousedown', closeHandler);
+						}
+					};
+					document.addEventListener('mousedown', closeHandler);
+				}, 100);
+			}
+
+			finishLengthEditing() {
+				this.editingLength = false;
+				if (this.lengthEditOverlay) {
+					document.body.removeChild(this.lengthEditOverlay);
+					this.lengthEditOverlay = null;
+				}
+			}
+
+			// Поиск элементов
+			findLineAtPoint(pos, tolerance = 10) {
+				for (let line of this.lines) {
+					if (this.distance(pos, line.start) < tolerance ||
+						this.distance(pos, line.end) < tolerance) {
+						return line;
+					}
+				}
+				return null;
+			}
+
+			findObjectAtPoint(pos, tolerance = 5) {
+				for (let i = this.objects.length - 1; i >= 0; i--) {
+					const obj = this.objects[i];
+					if (this.isPointInObject(pos, obj)) {
+						return obj;
+					}
+				}
+				return null;
+			}
+
+			isPointInObject(point, obj) {
+				return point.x >= obj.x && point.x <= obj.x + obj.width &&
+					point.y >= obj.y && point.y <= obj.y + obj.height;
+			}
+
+			distance(p1, p2) {
+				return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+			}
+
+			calculateLineLength(line) {
+				const dx = line.end.x - line.start.x;
+				const dy = line.end.y - line.start.y;
+				return Math.sqrt(dx * dx + dy * dy);
+			}
+
+			// Отрисовка
+			redraw() {
+				// Очистка canvas
+				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+				// Рисование сетки
+				if (this.snapToGrid) {
+					this.drawGrid();
+				}
+
+				// Рисование всех линий
+				this.lines.forEach(line => {
+					this.drawLine(line);
+					this.drawLengthInfo(line);
+				});
+
+				// Рисование объектов
+				this.objects.forEach(obj => {
+					this.drawObject(obj);
+				});
+
+				// Рисование временной линии (при рисовании)
+				if (this.tempLine) {
+					this.drawLine(this.tempLine);
+				}
+
+				// Подсветка выбранного элемента
+				if (this.selectedElement) {
+					this.highlightElement(this.selectedElement);
+				}
+			}
+
+			drawGrid() {
+				this.ctx.save();
+				this.ctx.strokeStyle = '#e0e0e0';
+				this.ctx.lineWidth = 0.5;
+
+				for (let x = 0; x <= this.canvas.width; x += this.gridSize) {
+					this.ctx.beginPath();
+					this.ctx.moveTo(x, 0);
+					this.ctx.lineTo(x, this.canvas.height);
+					this.ctx.stroke();
+				}
+
+				for (let y = 0; y <= this.canvas.height; y += this.gridSize) {
+					this.ctx.beginPath();
+					this.ctx.moveTo(0, y);
+					this.ctx.lineTo(this.canvas.width, y);
+					this.ctx.stroke();
+				}
+
+				this.ctx.restore();
+			}
+
+			drawLine(line) {
+				this.ctx.save();
+				this.ctx.beginPath();
+				this.ctx.moveTo(line.start.x, line.start.y);
+				this.ctx.lineTo(line.end.x, line.end.y);
+				this.ctx.strokeStyle = line.color;
+				this.ctx.lineWidth = line.width;
+				this.ctx.lineCap = 'round';
+				this.ctx.stroke();
+				this.ctx.restore();
+			}
+
+			drawLengthInfo(line) {
+				const midPoint = {
+					x: (line.start.x + line.end.x) / 2,
+					y: (line.start.y + line.end.y) / 2
+				};
+
+				this.ctx.save();
+				this.ctx.textAlign = 'center';
+				this.ctx.textBaseline = 'middle';
+
+				// Отображаем пользовательскую длину, если она задана
+				if (line.customLength !== undefined) {
+					this.ctx.fillStyle = 'red';
+					this.ctx.font = 'bold 12px Arial';
+					this.ctx.fillText(`${line.customLength}m`, midPoint.x, midPoint.y - 15);
+				} else {
+					// Иначе отображаем реальную длину в метрах
+					const realLength = this.calculateLineLength(line);
+					this.ctx.fillStyle = 'black';
+					this.ctx.font = '12px Arial';
+					this.ctx.fillText(`${realLength.toFixed(1)}m`, midPoint.x, midPoint.y - 15);
+				}
+
+				this.ctx.restore();
+			}
+
+			drawObject(obj) {
+				this.ctx.save();
+
+				// Рисуем объект в зависимости от его типа
+				switch (obj.type) {
+					case 'door':
+						this.drawDoor(obj);
+						break;
+					case 'window':
+						this.drawWindow(obj);
+						break;
+					case 'table':
+						this.drawTable(obj);
+						break;
+					case 'chair':
+						this.drawChair(obj);
+						break;
+					case 'sofa':
+						this.drawSofa(obj);
+						break;
+					case 'bed':
+						this.drawBed(obj);
+						break;
+					default:
+						this.drawGenericObject(obj);
+				}
+
+				this.ctx.restore();
+			}
+
+			drawDoor(obj) {
+				this.ctx.fillStyle = '#8B4513';
+				this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+				// Ручка
+				this.ctx.fillStyle = '#FFD700';
+				this.ctx.beginPath();
+				this.ctx.arc(obj.x + obj.width - 10, obj.y + obj.height / 2, 5, 0, 2 * Math.PI);
+				this.ctx.fill();
+
+				// Текст
+				this.ctx.fillStyle = 'white';
+				this.ctx.font = '10px Arial';
+				this.ctx.textAlign = 'center';
+				this.ctx.fillText('Дверь', obj.x + obj.width / 2, obj.y + obj.height + 15);
+			}
+
+			drawWindow(obj) {
+				// Рамка
+				this.ctx.fillStyle = '#A9A9A9';
+				this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+				// Стекло
+				this.ctx.fillStyle = '#87CEEB';
+				this.ctx.fillRect(obj.x + 5, obj.y + 5, obj.width - 10, obj.height - 10);
+
+				// Переплет
+				this.ctx.strokeStyle = '#A9A9A9';
+				this.ctx.lineWidth = 2;
+				this.ctx.beginPath();
+				this.ctx.moveTo(obj.x + obj.width / 2, obj.y + 5);
+				this.ctx.lineTo(obj.x + obj.width / 2, obj.y + obj.height - 5);
+				this.ctx.moveTo(obj.x + 5, obj.y + obj.height / 2);
+				this.ctx.lineTo(obj.x + obj.width - 5, obj.y + obj.height / 2);
+				this.ctx.stroke();
+
+				// Текст
+				this.ctx.fillStyle = 'black';
+				this.ctx.font = '10px Arial';
+				this.ctx.textAlign = 'center';
+				this.ctx.fillText('Окно', obj.x + obj.width / 2, obj.y + obj.height + 15);
+			}
+
+			drawTable(obj) {
+				this.ctx.fillStyle = '#D2691E';
+				this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+				// Ножки
+				this.ctx.fillStyle = '#8B4513';
+				this.ctx.fillRect(obj.x + 5, obj.y + obj.height, 5, 10);
+				this.ctx.fillRect(obj.x + obj.width - 10, obj.y + obj.height, 5, 10);
+
+				this.ctx.fillStyle = 'white';
+				this.ctx.font = '10px Arial';
+				this.ctx.textAlign = 'center';
+				this.ctx.textBaseline = 'middle';
+				this.ctx.fillText('Стол', obj.x + obj.width / 2, obj.y + obj.height / 2);
+			}
+
+			drawChair(obj) {
+				this.ctx.fillStyle = '#654321';
+				this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+				// Спинка
+				this.ctx.fillRect(obj.x, obj.y - 10, obj.width, 10);
+
+				this.ctx.fillStyle = 'white';
+				this.ctx.font = '10px Arial';
+				this.ctx.textAlign = 'center';
+				this.ctx.textBaseline = 'middle';
+				this.ctx.fillText('Стул', obj.x + obj.width / 2, obj.y + obj.height / 2);
+			}
+
+			drawSofa(obj) {
+				this.ctx.fillStyle = '#8B0000';
+				this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+				// Подлокотники
+				this.ctx.fillRect(obj.x, obj.y, 10, obj.height);
+				this.ctx.fillRect(obj.x + obj.width - 10, obj.y, 10, obj.height);
+
+				// Спинка
+				this.ctx.fillRect(obj.x, obj.y - 15, obj.width, 15);
+
+				this.ctx.fillStyle = 'white';
+				this.ctx.font = '10px Arial';
+				this.ctx.textAlign = 'center';
+				this.ctx.textBaseline = 'middle';
+				this.ctx.fillText('Диван', obj.x + obj.width / 2, obj.y + obj.height / 2);
+			}
+
+			drawBed(obj) {
+				this.ctx.fillStyle = '#4B0082';
+				this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+				// Подушка
+				this.ctx.fillStyle = '#FFFFFF';
+				this.ctx.fillRect(obj.x + 10, obj.y + 10, 20, 15);
+
+				this.ctx.fillStyle = 'white';
+				this.ctx.font = '10px Arial';
+				this.ctx.textAlign = 'center';
+				this.ctx.textBaseline = 'middle';
+				this.ctx.fillText('Кровать', obj.x + obj.width / 2, obj.y + obj.height / 2);
+			}
+
+			drawGenericObject(obj) {
+				this.ctx.fillStyle = obj.color || '#3498db';
+				this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+
+				this.ctx.fillStyle = 'white';
+				this.ctx.font = '10px Arial';
+				this.ctx.textAlign = 'center';
+				this.ctx.textBaseline = 'middle';
+				this.ctx.fillText(obj.label || 'Объект', obj.x + obj.width / 2, obj.y + obj.height / 2);
+			}
+
+			highlightElement(element) {
+				this.ctx.save();
+				this.ctx.strokeStyle = '#ff0000';
+				this.ctx.lineWidth = 2;
+				this.ctx.setLineDash([5, 5]);
+
+				if (element.start && element.end) {
+					// Это линия
+					const bounds = this.getLineBounds(element);
+					this.ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+
+					// Точки начала и конца
+					this.ctx.fillStyle = '#ff0000';
+					this.ctx.beginPath();
+					this.ctx.arc(element.start.x, element.start.y, 5, 0, 2 * Math.PI);
+					this.ctx.fill();
+
+					this.ctx.beginPath();
+					this.ctx.arc(element.end.x, element.end.y, 5, 0, 2 * Math.PI);
+					this.ctx.fill();
+				} else {
+					// Это объект
+					this.ctx.strokeRect(element.x - 5, element.y - 5, element.width + 10, element.height + 10);
+				}
+
+				this.ctx.restore();
+			}
+
+			showSnapIndicator(x, y) {
+				this.ctx.save();
+				this.ctx.strokeStyle = '#ff0000';
+				this.ctx.lineWidth = 1;
+				this.ctx.setLineDash([2, 2]);
+				this.ctx.beginPath();
+				this.ctx.arc(x, y, 3, 0, 2 * Math.PI);
+				this.ctx.stroke();
+				this.ctx.restore();
+			}
+
+			getLineBounds(line) {
+				const minX = Math.min(line.start.x, line.end.x);
+				const minY = Math.min(line.start.y, line.end.y);
+				const maxX = Math.max(line.start.x, line.end.x);
+				const maxY = Math.max(line.start.y, line.end.y);
+
+				return {
+					x: minX - 10,
+					y: minY - 10,
+					width: maxX - minX + 20,
+					height: maxY - minY + 20
+				};
+			}
+
+			// Добавление объектов
+			addObject(type, x, y) {
+				let obj;
+
+				switch (type) {
+					case 'door':
+						obj = { type: 'door', x, y, width: 40, height: 80 };
+						break;
+					case 'window':
+						obj = { type: 'window', x, y, width: 60, height: 40 };
+						break;
+					case 'table':
+						obj = { type: 'table', x, y, width: 60, height: 40 };
+						break;
+					case 'chair':
+						obj = { type: 'chair', x, y, width: 30, height: 30 };
+						break;
+					case 'sofa':
+						obj = { type: 'sofa', x, y, width: 100, height: 40 };
+						break;
+					case 'bed':
+						obj = { type: 'bed', x, y, width: 80, height: 60 };
+						break;
+					default:
+						obj = { type: 'generic', x, y, width: 50, height: 50, color: '#3498db', label: 'Объект' };
+				}
+
+				obj.id = Date.now() + Math.random();
+				this.objects.push(obj);
+				this.redraw();
+			}
+
+			// Сохранение в PDF
+			saveAsPDF() {
+				// Проверяем, загружена ли библиотека jsPDF
+				if (typeof window.jspdf === 'undefined') {
+					alert('Библиотека jsPDF не загружена. Пожалуйста, проверьте подключение к интернету.');
+					return;
+				}
+
+				// Создаем новый PDF документ
+				const { jsPDF } = window.jspdf;
+				const pdf = new jsPDF();
+
+				// Получаем данные canvas в формате изображения
+				const canvas = this.canvas;
+				const imgData = canvas.toDataURL('image/png');
+
+				// Получаем размеры canvas
+				const canvasWidth = canvas.width;
+				const canvasHeight = canvas.height;
+
+				// Размеры страницы PDF (A4)
+				const pdfWidth = pdf.internal.pageSize.getWidth();
+				const pdfHeight = pdf.internal.pageSize.getHeight();
+
+				// Вычисляем масштаб для размещения изображения на странице
+				const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+				const scaledWidth = canvasWidth * ratio;
+				const scaledHeight = canvasHeight * ratio;
+
+				// Центрируем изображение на странице
+				const x = (pdfWidth - scaledWidth) / 2;
+				const y = (pdfHeight - scaledHeight) / 2;
+
+				// Добавляем изображение в PDF
+				pdf.addImage(imgData, 'PNG', x, y, scaledWidth, scaledHeight);
+
+				// Добавляем дату и информацию о проекте
+				const currentDate = new Date().toLocaleDateString('ru-RU');
+				pdf.setFontSize(10);
+				pdf.text(`Дата создания: ${currentDate}`, 10, 10);
+				pdf.text(`Всего линий: ${this.lines.length}`, 10, 20);
+				pdf.text(`Всего объектов: ${this.objects.length}`, 10, 30);
+
+				// Сохраняем PDF
+				pdf.save('чертеж.pdf');
+			}
+		}
+
+		// Инициализация редактора
+		document.addEventListener('DOMContentLoaded', () => {
+			const editor = new Editor('drawingCanvas');
+			window.editor = editor; // Для отладки
+		});
+	</script>
+</body>
+
+</html>
