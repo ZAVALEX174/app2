@@ -482,39 +482,39 @@
 		class ObjectFactory {
 			static createObject(type, x, y) {
 				const objectConfigs = {
-					'door': { width: 30, height: 30, image: './img/dvercloses.png', label: 'Дверь закрытвая' },
-					'door2': { width: 30, height: 30, image: './img/dverwentoknowood.png', label: 'Дверь деревянная с вентоткном' },
-					'door3': { width: 30, height: 30, image: './img/dverventrech.png', label: 'Дверь с вентрешеткой' },
-					'door4': { width: 30, height: 30, image: './img/dveropenmetall.png', label: 'Дверь металлическая открытая' },
+					'door': { width: 15, height: 30, image: './img/dvercloses.png', label: 'Дверь закрытвая' },
+					'door2': { width: 15, height: 30, image: './img/dverwentoknowood.png', label: 'Дверь деревянная с вентоткном' },
+					'door3': { width: 15, height: 30, image: './img/dverventrech.png', label: 'Дверь с вентрешеткой' },
+					'door4': { width: 15, height: 30, image: './img/dveropenmetall.png', label: 'Дверь металлическая открытая' },
 
-					'fan': { width: 30, height: 30, image: './img/fan.png', label: 'Вентилятор основной' },
-					'fan2': { width: 30, height: 30, image: './img/fan2.png', label: 'Вентилятор' },
+					'fan': { width: 40, height: 30, image: './img/fan.png', label: 'Вентилятор основной' },
+					'fan2': { width: 40, height: 30, image: './img/fan2.png', label: 'Вентилятор' },
 
-					'fire': { width: 30, height: 30, image: './img/fire.png', label: 'Огонь' },
-					'fire2': { width: 30, height: 30, image: './img/pozarniigidrant.png', label: 'Пожарный гидрант' },
+					'fire': { width: 40, height: 30, image: './img/fire.png', label: 'Огонь' },
+					'fire2': { width: 40, height: 30, image: './img/pozarniigidrant.png', label: 'Пожарный гидрант' },
 
-					'boom': { width: 30, height: 30, image: './img/massovievzivniepaboti.png', label: 'Массовый взрывные работы' },
-					'boom2': { width: 30, height: 30, image: './img/vzrivnieraboti.png', label: 'Взрывные работы' },
+					'boom': { width: 40, height: 30, image: './img/massovievzivniepaboti.png', label: 'Массовый взрывные работы' },
+					'boom2': { width: 40, height: 30, image: './img/vzrivnieraboti.png', label: 'Взрывные работы' },
 
-					'medical': { width: 30, height: 30, image: './img/medpunkt.png', label: 'Медицинский пункт' },
+					'medical': { width: 40, height: 30, image: './img/medpunkt.png', label: 'Медицинский пункт' },
 
 					'building': { width: 30, height: 30, image: './img/nadshahtnoe.png', label: 'Надшахтное строение' },
 
-					'pumps': { width: 30, height: 30, image: './img/nanospogruznoi.png', label: 'Насос погружной' },
-					'pumps2': { width: 30, height: 30, image: './img/nasosnayastancia.png', label: 'Насосная станция' },
+					'pumps': { width: 40, height: 30, image: './img/nanospogruznoi.png', label: 'Насос погружной' },
+					'pumps2': { width: 40, height: 30, image: './img/nasosnayastancia.png', label: 'Насосная станция' },
 
-					'people': { width: 30, height: 30, image: './img/people.png', label: 'Люди' },
+					'people': { width: 40, height: 30, image: './img/people.png', label: 'Люди' },
 
-					'jumper': { width: 30, height: 30, image: './img/petemichkabeton.png', label: 'Перемычка бетонная' },
-					'jumper2': { width: 30, height: 30, image: './img/petemichkakirpich.png', label: 'Перемычка кирпичная' },
-					'jumper3': { width: 30, height: 30, image: './img/petemichkametall.png', label: 'Перемычка металлическая' },
-					'jumper4': { width: 30, height: 30, image: './img/petemichkawood.png', label: 'Перемычка деревянная' },
+					'jumper': { width: 10, height: 30, image: './img/petemichkabeton.png', label: 'Перемычка бетонная' },
+					'jumper2': { width: 10, height: 30, image: './img/petemichkakirpich.png', label: 'Перемычка кирпичная' },
+					'jumper3': { width: 10, height: 30, image: './img/petemichkametall.png', label: 'Перемычка металлическая' },
+					'jumper4': { width: 10, height: 30, image: './img/petemichkawood.png', label: 'Перемычка деревянная' },
 
-					'phone': { width: 30, height: 30, image: './img/phone.png', label: 'Телефон' },
+					'phone': { width: 40, height: 35, image: './img/phone.png', label: 'Телефон' },
 
-					'equipment': { width: 30, height: 30, image: './img/samohodnoe.png', label: 'Самоходное оборудование' },
+					'equipment': { width: 40, height: 40, image: './img/samohodnoe.png', label: 'Самоходное оборудование' },
 
-					'entrance': { width: 30, height: 30, image: './img/zapasvhod.png', label: 'Запасной вход' },
+					'entrance': { width: 40, height: 10, image: './img/zapasvhod.png', label: 'Запасной вход' },
 
 				};
 
@@ -554,19 +554,15 @@
 					{ type: 'people', name: 'Люди', icon: './img/people.png', category: 'people' },
 
 					{ type: 'jumper', name: 'Перемычка бетонная', icon: './img/petemichkabeton.png', category: 'jumper' },
-					{ type: 'jumper1', name: 'Перемычка кирпичная', icon: './img/petemichkakirpich.png', category: 'jumper' },
-					{ type: 'jumper2', name: 'Перемычка металлическая', icon: './img/petemichkametall.png', category: 'jumper' },
-					{ type: 'jumper3', name: 'Перемычка деревянная', icon: './img/petemichkawood.png', category: 'jumper' },
+					{ type: 'jumper2', name: 'Перемычка кирпичная', icon: './img/petemichkakirpich.png', category: 'jumper' },
+					{ type: 'jumper3', name: 'Перемычка металлическая', icon: './img/petemichkametall.png', category: 'jumper' },
+					{ type: 'jumper4', name: 'Перемычка деревянная', icon: './img/petemichkawood.png', category: 'jumper' },
 
 					{ type: 'phone', name: 'Телефон', icon: './img/phone.png', category: 'phone' },
 
 					{ type: 'equipment', name: 'Самоходное оборудование', icon: './img/samohodnoe.png', category: 'equipment' },
 
 					{ type: 'entrance', name: 'Запасной вход', icon: './img/zapasvhod.png', category: 'entrance' },
-
-
-
-
 				];
 			}
 		}
